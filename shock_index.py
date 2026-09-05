@@ -28,7 +28,6 @@ Stdlib only — no external dependencies.
 import argparse
 import csv
 import json
-import math
 import sys
 
 
@@ -119,7 +118,21 @@ def reverse_shock_index(hr, sbp):
 
 
 def map_from_bp(sbp, dbp):
-    """Calculate Mean Arterial Pressure: MAP = DBP + (SBP - DBP) / 3."""
+    """Calculate Mean Arterial Pressure: MAP = DBP + (SBP - DBP) / 3.
+
+    Parameters:
+        sbp: systolic blood pressure in mmHg (must be positive)
+        dbp: diastolic blood pressure in mmHg (must be non-negative and <= sbp)
+
+    Raises:
+        ValueError: if inputs are invalid
+    """
+    if sbp <= 0:
+        raise ValueError(f"SBP must be positive, got {sbp}")
+    if dbp < 0:
+        raise ValueError(f"DBP must be non-negative, got {dbp}")
+    if dbp > sbp:
+        raise ValueError(f"DBP ({dbp}) cannot exceed SBP ({sbp})")
     return dbp + (sbp - dbp) / 3.0
 
 
@@ -270,17 +283,40 @@ def process_csv(input_path, output_path):
     """Process a CSV file of vital signs and compute shock indices.
 
     Expected columns: hr (or heart_rate), sbp. Optional: dbp, age, sex.
+
+    Raises:
+        FileNotFoundError: if input_path does not exist
+        ValueError: if required columns are missing
     """
+    import os
+    if not os.path.isfile(input_path):
+        raise FileNotFoundError(f"Input file not found: {input_path}")
+
     with open(input_path, newline="", encoding="utf-8-sig") as f:
         reader = csv.DictReader(f)
         fieldnames = list(reader.fieldnames or [])
         rows = list(reader)
 
+    if not fieldnames:
+        raise ValueError("CSV file is empty or has no header row")
+
+    # Validate required columns exist (hr or heart_rate, and sbp)
+    has_hr = "hr" in fieldnames or "heart_rate" in fieldnames
+    has_sbp = "sbp" in fieldnames
+    if not has_hr or not has_sbp:
+        raise ValueError(
+            f"CSV must contain 'hr' (or 'heart_rate') and 'sbp' columns. Found: {fieldnames}"
+        )
+
     results = []
     for row in rows:
         try:
-            hr = float(row.get("hr") or row.get("heart_rate"))
-            sbp = float(row.get("sbp"))
+            hr_raw = row.get("hr") or row.get("heart_rate")
+            sbp_raw = row.get("sbp")
+            if not hr_raw or not sbp_raw:
+                raise ValueError("Missing required 'hr' or 'sbp' value in row")
+            hr = float(hr_raw)
+            sbp = float(sbp_raw)
             dbp = row.get("dbp")
             age = row.get("age")
             sex = row.get("sex")

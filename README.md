@@ -19,7 +19,7 @@
 ## 📖 What It Does
 
 Shock Index Calculator
-======================
+=======================
 
 Calculates multiple shock index variants for trauma triage and
 occult hypoperfusion assessment:
@@ -40,7 +40,7 @@ Pediatric adjustments:
     thresholds do not directly apply.  Age-specific reference ranges
     are provided.
 
-Stdlib only — no external dependencies.
+Core library is stdlib only — no external dependencies required.
 
 ---
 
@@ -48,7 +48,7 @@ Stdlib only — no external dependencies.
 
 ### 🔬 Analytical Functions
 
-- **`shock_index()`**: Calculate Shock Index: SI = HR / SBP.
+- **`shock_index(hr, sbp)`**: Calculate Shock Index: SI = HR / SBP.
 
 Parameters:
     hr:  heart rate in bpm
@@ -58,7 +58,8 @@ Reference: Allgöwer M, Buri C. Schockindex. Dtsch Med Wschr 1967.
 
 >>> shock_index(80, 120)
 0.667
-- **`modified_shock_index()`**: Calculate Modified Shock Index: MSI = HR / MAP.
+
+- **`modified_shock_index(hr, sbp, dbp)`**: Calculate Modified Shock Index: MSI = HR / MAP.
 
 MAP = DBP + (SBP - DBP) / 3
 
@@ -68,7 +69,8 @@ Parameters:
     dbp: diastolic blood pressure in mmHg
 
 Reference: Mutschler M, et al. Crit Care 2013;17:R120.
-- **`age_adjusted_si()`**: Calculate age-adjusted Shock Index: Age-SI = SI / (age / 100).
+
+- **`age_adjusted_si(si, age)`**: Calculate age-adjusted Shock Index: Age-SI = SI / (age / 100).
 
 Useful for elderly patients where normal SI ranges shift.
 
@@ -77,58 +79,57 @@ Parameters:
     age: patient age in years
 
 Reference: Zarzaur BL, et al. J Trauma 2010;68:1238-1243.
-- **`reverse_shock_index()`**: Calculate Reverse Shock Index: RSI = SBP / HR.
+
+- **`reverse_shock_index(hr, sbp)`**: Calculate Reverse Shock Index: RSI = SBP / HR.
 
 Inverse of SI; higher values are better.  RSI < 1.0 is concerning.
 
 Parameters:
     hr:  heart rate in bpm
     sbp: systolic blood pressure in mmHg
-- **`map_from_bp()`**: Calculate Mean Arterial Pressure: MAP = DBP + (SBP - DBP) / 3.
 
----
-
-## 📐 Mathematical Formulation & Logic
-
-```text
-  Calculates multiple shock index variants for trauma triage and
-  """Calculate Shock Index: SI = HR / SBP.
-  """Calculate Modified Shock Index: MSI = HR / MAP.
-  """Calculate age-adjusted Shock Index: Age-SI = SI / (age / 100).
-  """Calculate Reverse Shock Index: RSI = SBP / HR.
-```
+- **`map_from_bp(sbp, dbp)`**: Calculate Mean Arterial Pressure: MAP = DBP + (SBP - DBP) / 3.
 
 ---
 
 ## 💻 CLI Quickstart & Usage
 
-### 1. Guided Interactive Mode
+### 1. Single Patient Calculation
 ```bash
-python cli.py
+python cli.py single --hr 80 --sbp 120
+python cli.py single --hr 80 --sbp 120 --dbp 80 --age 50 --sex male
 ```
 
-### 2. Direct Parameterized Evaluation
+### 2. Batch CSV Processing
 ```bash
-python cli.py --hr <value> --sbp <value> --dbp <value> --age <value>
+python cli.py batch -i sample.csv -o results.csv
+```
+
+### 3. Audit Commands
+```bash
+python cli.py audit --task-id TASK-001
+python cli.py chat "Explain shock index"
+python cli.py verify-audit
 ```
 
 ### Parameter Reference
-- `--hr`: Specifies input measurement or parameter value.
-- `--sbp`: Specifies input measurement or parameter value.
-- `--dbp`: Specifies input measurement or parameter value.
-- `--age`: Specifies input measurement or parameter value.
-- `--sex`: Specifies input measurement or parameter value.
-- `--input`: Specifies input measurement or parameter value.
-- `--output`: Specifies input measurement or parameter value.
+- `--hr`: Heart rate in bpm (required for single calculation)
+- `--sbp`: Systolic blood pressure in mmHg (required for single calculation)
+- `--dbp`: Diastolic blood pressure in mmHg (optional)
+- `--age`: Patient age in years (optional)
+- `--sex`: Patient sex (optional)
+- `-i/--input`: Input CSV file path (for batch mode)
+- `-o/--output`: Output CSV file path (for batch mode, default: results.csv)
 
-### Input Data Schema
+### Input CSV Schema
 
 | Field | Description | Requirement |
 |:------|:------------|:------------|
-| `Patient_ID` | Parameter / observation metric | Required |
-| `v1` | Parameter / observation metric | Required |
-| `v2` | Parameter / observation metric | Required |
-| `v3` | Parameter / observation metric | Required |
+| `hr` (or `heart_rate`) | Heart rate in bpm | Required |
+| `sbp` | Systolic blood pressure in mmHg | Required |
+| `dbp` | Diastolic blood pressure in mmHg | Optional |
+| `age` | Patient age in years | Optional |
+| `sex` | Patient sex | Optional |
 
 ---
 
@@ -140,6 +141,10 @@ python cli.py --hr <value> --sbp <value> --dbp <value> --age <value>
 * **Active Learning Bayesian Calibration:** Dynamic tracker updating worker reliability weights and monitoring Brier calibration drift.
 * **FastAPI & Prometheus Telemetry:** Exposes OpenAPI 3.1 REST endpoints and operational Prometheus metrics (`/metrics`).
 
+### Security Notes
+- The audit trail uses HMAC-SHA256 with a secret key. Set the `AUDIT_SECRET_KEY` environment variable in production to ensure audit trail persistence across restarts.
+- Without `AUDIT_SECRET_KEY` set, a random key is generated at startup (suitable for development/testing only).
+
 ---
 
 ## 🧪 Testing & Verification
@@ -150,10 +155,17 @@ Run the automated test suite:
 pytest -v
 ```
 
+Run specific test files:
+
+```bash
+pytest test_shock_index.py -v
+pytest tests/ -v
+```
+
 Execute high-throughput batch simulation benchmarks:
 
 ```bash
-python simulator.py --tasks 1000 --concurrency 8
+python simulator.py 1000
 ```
 
 ---
@@ -162,5 +174,40 @@ python simulator.py --tasks 1000 --concurrency 8
 
 ```bash
 docker build -t shock-index-modified-calculator .
-docker run -p 8000:8000 shock-index-modified-calculator
+docker run -p 8000:8000 -e AUDIT_SECRET_KEY=your-secret-key shock-index-modified-calculator
+```
+
+Or using Docker Compose:
+
+```bash
+AUDIT_SECRET_KEY=your-secret-key docker-compose up
+```
+
+---
+
+## 📁 Project Structure
+
+```
+shock-index-modified-calculator/
+├── shock_index.py          # Core calculation library (stdlib only)
+├── cli.py                  # Command-line interface
+├── simulator.py            # High-throughput simulation
+├── enrichment.py           # Enrichment scoring engines
+├── agents/                 # Enterprise agent framework
+│   ├── base.py            # Security, PHI guard, audit trail
+│   ├── models.py          # Pydantic data models
+│   ├── supervisor.py      # Supervisor orchestrator
+│   ├── workers.py         # Specialized worker agents
+│   ├── api.py             # FastAPI REST server
+│   ├── llm_factory.py     # LLM provider factory
+│   ├── learning.py        # Bayesian calibration engine
+│   ├── metrics.py         # Prometheus metrics
+│   └── streamer.py        # WebSocket telemetry
+├── web/                   # Operations console (HTML)
+├── tests/                 # Test suite
+├── test_shock_index.py    # Core library tests
+├── sample.csv             # Sample input data
+├── Dockerfile             # Container build
+├── docker-compose.yml     # Container orchestration
+└── openapi_spec.json      # OpenAPI specification
 ```

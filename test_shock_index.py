@@ -2,6 +2,8 @@
 
 Run with: python -m pytest test_shock_index.py -v
 """
+import os
+import tempfile
 import pytest
 from shock_index import (
     shock_index, modified_shock_index, age_adjusted_si,
@@ -88,6 +90,22 @@ class TestMAPFromBP:
         # MAP = 100 + (100-100)/3 = 100
         assert map_from_bp(100, 100) == 100.0
 
+    def test_invalid_sbp_zero(self):
+        with pytest.raises(ValueError):
+            map_from_bp(0, 80)
+
+    def test_invalid_sbp_negative(self):
+        with pytest.raises(ValueError):
+            map_from_bp(-10, 80)
+
+    def test_invalid_dbp_negative(self):
+        with pytest.raises(ValueError):
+            map_from_bp(120, -5)
+
+    def test_dbp_exceeds_sbp(self):
+        with pytest.raises(ValueError):
+            map_from_bp(80, 120)
+
 
 # ── SI classification ───────────────────────────────────────────────
 
@@ -172,3 +190,41 @@ class TestCalculateShockIndex:
         assert "modified_si" in result
         assert "age_adjusted_si" in result
         assert "sex" in result
+
+
+# ── CSV processing ─────────────────────────────────────────────────
+
+class TestProcessCSV:
+    def test_file_not_found(self):
+        with pytest.raises(FileNotFoundError):
+            process_csv("nonexistent_file.csv", "output.csv")
+
+    def test_missing_required_columns(self):
+        tmp = tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False)
+        try:
+            tmp.write("col1,col2\n1,2\n")
+            tmp.close()
+            with pytest.raises(ValueError, match="must contain"):
+                process_csv(tmp.name, "output.csv")
+        finally:
+            tmp.close()
+            if os.path.isfile(tmp.name):
+                os.unlink(tmp.name)
+
+    def test_valid_csv_processing(self):
+        tmp = tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False)
+        try:
+            tmp.write("hr,sbp,dbp,age\n80,120,80,50\n100,90,60,30\n")
+            tmp.close()
+            input_path = tmp.name
+            output_path = input_path + ".out.csv"
+            results = process_csv(input_path, output_path)
+            assert len(results) == 2
+            assert "shock_index" in results[0]
+            assert os.path.isfile(output_path)
+        finally:
+            tmp.close()
+            if os.path.isfile(input_path):
+                os.unlink(input_path)
+            if os.path.isfile(output_path):
+                os.unlink(output_path)

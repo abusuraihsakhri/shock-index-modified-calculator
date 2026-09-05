@@ -27,6 +27,17 @@ def main(argv=None):
     batch.add_argument("-i", "--input", required=True, help="Input CSV path")
     batch.add_argument("-o", "--output", default="results.csv", help="Output CSV path")
 
+    # Audit command
+    audit = subparsers.add_parser("audit", help="Run audit task")
+    audit.add_argument("--task-id", required=True, help="Task identifier")
+
+    # Chat command
+    chat = subparsers.add_parser("chat", help="Supervisory chat")
+    chat.add_argument("query", nargs="+", help="Query text")
+
+    # Verify audit command
+    subparsers.add_parser("verify-audit", help="Verify audit trail integrity")
+
     args = parser.parse_args(argv)
 
     if args.command == "single":
@@ -40,6 +51,36 @@ def main(argv=None):
     if args.command == "batch":
         results = process_csv(args.input, args.output)
         print(f"Processed {len(results)} records -> {args.output}")
+        return 0
+
+    if args.command == "audit":
+        from agents.supervisor import SystemSupervisor
+        from agents.models import SystemTaskPayload
+        supervisor = SystemSupervisor(model_provider="mock")
+        payload = SystemTaskPayload(
+            task_id=args.task_id,
+            target_identifier="CLI-AUDIT",
+            primary_metric=10.0,
+            secondary_metric=2.0,
+            status_descriptor="NOMINAL",
+        )
+        dossier = supervisor.process_task(payload)
+        print(json.dumps(dossier.to_dict(), indent=2, default=str))
+        return 0
+
+    if args.command == "chat":
+        from agents.supervisor import SystemSupervisor
+        supervisor = SystemSupervisor(model_provider="mock")
+        query = " ".join(args.query)
+        response = supervisor.query_supervisory_chat(query)
+        print(json.dumps({"response": response}, indent=2))
+        return 0
+
+    if args.command == "verify-audit":
+        from agents.base import AuditLogger
+        verified = AuditLogger.verify_integrity()
+        trail = AuditLogger.get_trail()
+        print(json.dumps({"verified": verified, "blocks": len(trail)}, indent=2))
         return 0
 
     parser.print_help()
