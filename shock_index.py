@@ -55,6 +55,12 @@ def _validate_number(value, label, *, positive=False):
     return value
 
 
+def _finite_result(value, label):
+    if not math.isfinite(value):
+        raise ValueError(f"{label} is outside the finite numeric range")
+    return value
+
+
 def shock_index(hr, sbp):
     """Calculate Shock Index: SI = HR / SBP.
 
@@ -69,7 +75,7 @@ def shock_index(hr, sbp):
     """
     _validate_number(hr, "Heart rate", positive=True)
     _validate_number(sbp, "SBP", positive=True)
-    return hr / sbp
+    return _finite_result(hr / sbp, "Shock index")
 
 
 def modified_shock_index(hr, sbp, dbp):
@@ -86,7 +92,7 @@ def modified_shock_index(hr, sbp, dbp):
     """
     _validate_number(hr, "Heart rate", positive=True)
     map_val = map_from_bp(sbp, dbp)
-    return hr / map_val
+    return _finite_result(hr / map_val, "Modified shock index")
 
 
 def age_adjusted_si(si, age):
@@ -103,7 +109,7 @@ def age_adjusted_si(si, age):
     """
     _validate_number(si, "Shock index", positive=True)
     _validate_number(age, "Age", positive=True)
-    return si * age
+    return _finite_result(si * age, "Age shock index")
 
 
 def reverse_shock_index(hr, sbp):
@@ -117,7 +123,7 @@ def reverse_shock_index(hr, sbp):
     """
     _validate_number(hr, "Heart rate", positive=True)
     _validate_number(sbp, "SBP", positive=True)
-    return sbp / hr
+    return _finite_result(sbp / hr, "Reverse shock index")
 
 
 def map_from_bp(sbp, dbp):
@@ -136,7 +142,7 @@ def map_from_bp(sbp, dbp):
         raise ValueError(f"DBP must be non-negative, got {dbp}")
     if dbp > sbp:
         raise ValueError(f"DBP ({dbp}) cannot exceed SBP ({sbp})")
-    return dbp + (sbp - dbp) / 3.0
+    return _finite_result(dbp + (sbp - dbp) / 3.0, "Mean arterial pressure")
 
 
 # ── Classification ───────────────────────────────────────────────────
