@@ -8,7 +8,7 @@ occult hypoperfusion assessment:
 
   - Shock Index (SI)        = HR / SBP
   - Modified Shock Index (MSI) = HR / MAP  (MAP = DBP + (SBP-DBP)/3)
-  - Age-adjusted SI          = SI / (age / 100)
+  - Age Shock Index (Age-SI) = age (years) × SI
   - Reverse SI               = SBP / HR
 
 Interpretation:
@@ -242,6 +242,12 @@ def classify_si_pediatric(si_value, age_years):
     """Classify SI using age-appropriate pediatric thresholds."""
     _validate_number(si_value, "Shock index", positive=True)
     low, high = pediatric_si_reference(age_years)
+    if si_value < low:
+        return {
+            "risk_level": "below_exploratory_range",
+            "description": f"Below exploratory range for age {age_years} ({low}-{high})",
+            "clinical_action": "Interpret cautiously; pediatric ranges are exploratory",
+        }
     if si_value <= high:
         return {
             "risk_level": "normal",
@@ -394,7 +400,7 @@ def process_csv(input_path, output_path):
 
     with open(output_path, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=out_fields)
-        writer.writeheader()
+        writer.writerow({key: safe_cell(key) for key in out_fields})
         for row in results:
             writer.writerow({key: safe_cell(row.get(key, "")) for key in out_fields})
 
