@@ -2,111 +2,112 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Shock Index Modified Calculator API",
-    "description": "Enterprise Distributed Component Platform (Clinical & Cryptographic AI) adhering to CAP / CLSI / NIST Standards.",
-    "version": "3.0.0-ENTERPRISE",
-    "contact": {
-      "name": "Dr. Abu Suraih Sakhri",
-      "url": "https://github.com/abusuraihsakhri"
-    }
+    "version": "1.0.0",
+    "description": "Research and educational numerical calculator; separate illustrative audit demo. Runtime /openapi.json is authoritative."
   },
   "paths": {
     "/health": {
       "get": {
-        "summary": "Health and metadata check",
+        "summary": "Service health",
         "responses": {
           "200": {
-            "description": "System optimal"
+            "description": "Service status (JSON)"
           }
         }
       }
     },
     "/metrics": {
       "get": {
-        "summary": "Prometheus operational metrics",
+        "summary": "In-memory demo counters (JSON, not Prometheus text)",
         "responses": {
           "200": {
-            "description": "Prometheus text metrics"
+            "description": "Current in-memory counters"
+          }
+        }
+      }
+    },
+    "/api/calculate": {
+      "post": {
+        "summary": "Calculate SI, MSI, MAP, Age-SI and reverse SI",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "hr",
+                  "sbp"
+                ],
+                "properties": {
+                  "hr": {
+                    "type": "number",
+                    "exclusiveMinimum": 0,
+                    "description": "Heart rate, bpm"
+                  },
+                  "sbp": {
+                    "type": "number",
+                    "exclusiveMinimum": 0,
+                    "description": "Systolic BP, mmHg"
+                  },
+                  "dbp": {
+                    "type": "number",
+                    "minimum": 0,
+                    "description": "Optional diastolic BP, must not exceed SBP"
+                  },
+                  "age": {
+                    "type": "number",
+                    "exclusiveMinimum": 0,
+                    "description": "Optional age, years"
+                  },
+                  "sex": {
+                    "type": "string",
+                    "description": "Optional metadata"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Calculated indices and exploratory interpretation"
+          },
+          "422": {
+            "description": "Input validation error"
           }
         }
       }
     },
     "/api/audit": {
       "post": {
-        "summary": "Dispatch task payload across specialized workers",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "task_id": {
-                    "type": "string"
-                  },
-                  "target_identifier": {
-                    "type": "string"
-                  },
-                  "primary_metric": {
-                    "type": "number"
-                  },
-                  "secondary_metric": {
-                    "type": "number"
-                  },
-                  "status_descriptor": {
-                    "type": "string"
-                  },
-                  "is_critical_flag": {
-                    "type": "boolean"
-                  }
-                },
-                "required": [
-                  "task_id",
-                  "target_identifier",
-                  "primary_metric"
-                ]
-              }
-            }
-          }
-        },
+        "summary": "Process generic demonstration task",
         "responses": {
           "200": {
-            "description": "Consensus dossier with HMAC signature"
+            "description": "In-memory demonstration dossier"
+          },
+          "422": {
+            "description": "Invalid payload"
           }
         }
       }
     },
     "/api/chat": {
       "post": {
-        "summary": "Air-gapped supervisory conversational assistant",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "query": {
-                    "type": "string"
-                  }
-                },
-                "required": [
-                  "query"
-                ]
-              }
-            }
-          }
-        },
+        "summary": "Query deterministic mock (not clinical reasoning)",
         "responses": {
           "200": {
-            "description": "Supervisory response"
+            "description": "Mock demonstration response"
           }
         }
       }
     },
     "/api/audit/logs": {
       "get": {
-        "summary": "Retrieve and cryptographically verify HMAC audit trail",
+        "summary": "Read HMAC-protected in-process audit chain",
         "responses": {
           "200": {
-            "description": "Cryptographic audit trail"
+            "description": "Audit entries and signature validation result"
           }
         }
       }
