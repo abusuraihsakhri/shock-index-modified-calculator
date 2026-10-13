@@ -99,7 +99,7 @@ def age_adjusted_si(si, age):
         si:  shock index value
         age: patient age in years
 
-    Reference: Zarzaur BL, et al. J Trauma 2010;68:1238-1243.
+    Reference: Zarzaur BL, et al. J Surg Res 2008;147:229-236.
     """
     _validate_number(si, "Shock index", positive=True)
     _validate_number(age, "Age", positive=True)
@@ -168,13 +168,13 @@ def classify_si(si_value):
     elif si_value <= SI_HIGH_MORTALITY:
         return {
             "risk_level": "high",
-            "description": "Suggests significant hemorrhage or sepsis (>0.9)",
+            "description": "Elevated SI (>0.9); possible association with adverse outcomes",
             "clinical_action": "Prompt clinical assessment may be warranted",
         }
     elif si_value <= SI_CRITICAL:
         return {
             "risk_level": "very_high",
-            "description": "High mortality risk (>1.0)",
+            "description": "Marked SI elevation (>1.0); clinical interpretation required",
             "clinical_action": "Urgent clinical assessment may be warranted",
         }
     else:
@@ -246,19 +246,19 @@ def classify_si_pediatric(si_value, age_years):
         return {
             "risk_level": "normal",
             "description": f"Normal for age {age_years} (range {low}-{high})",
-            "clinical_action": "Standard monitoring",
+            "clinical_action": "Interpret cautiously; pediatric ranges are exploratory",
         }
     elif si_value <= high + 0.3:
         return {
             "risk_level": "elevated",
             "description": f"Elevated for age {age_years}",
-            "clinical_action": "Close monitoring, assess volume status",
+            "clinical_action": "Consider comprehensive clinical assessment",
         }
     else:
         return {
             "risk_level": "high",
             "description": f"Significantly elevated for age {age_years}",
-            "clinical_action": "Urgent evaluation for hemorrhage/shock",
+            "clinical_action": "Consider comprehensive clinical assessment",
         }
 
 
