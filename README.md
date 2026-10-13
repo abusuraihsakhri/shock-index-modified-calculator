@@ -1,213 +1,81 @@
 # Shock Index Modified Calculator
 
-> **Domain:** Clinical Decision Support & Biomedical Computing  
-> **Reference Guidelines & Standards:** `Standard Clinical Formulations & ISO/IEC Quality Frameworks`
+An educational and research-oriented calculator for common hemodynamic indices. The static browser interface works without a server; a standard-library Python implementation, CLI, CSV batch processor and optional FastAPI service are included.
 
-<div align="center">
+## Calculations
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-![Python](https://img.shields.io/badge/Python-3.10%20%7C%203.11%20%7C%203.12-3776AB.svg?logo=python&logoColor=white)
-![FastAPI](https://img.shields.io/badge/FastAPI-0.111-009688.svg?logo=fastapi&logoColor=white)
-![Audit Trail](https://img.shields.io/badge/Audit-HMAC--SHA256_Tamper--Evident-brightgreen.svg)
-![Zero-PHI Guard](https://img.shields.io/badge/Guard-Zero--PHI_Outbound-blue.svg)
-![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg?logo=docker&logoColor=white)
+| Measure | Formula | Required values |
+| --- | --- | --- |
+| Shock Index (SI) | HR / SBP | Heart rate (bpm), systolic BP (mmHg) |
+| Modified Shock Index (MSI) | HR / MAP | HR, SBP, diastolic BP (mmHg) |
+| Mean arterial pressure (MAP) | DBP + (SBP - DBP) / 3 | SBP, DBP |
+| Age Shock Index (Age-SI) | Age (years) × SI | HR, SBP, age |
+| Reverse SI | SBP / HR | HR, SBP |
 
-</div>
+**Age-SI is age multiplied by SI**, as originally studied by Zarzaur et al.; it is not SI divided by normalized age. The Python module also contains exploratory pediatric ranges, which are not validated stand-alone triage rules.
 
----
+**Clinical limitation:** SI and MSI do not diagnose shock or determine treatment. Cutoffs vary by setting and population, and values cannot establish an individual's mortality risk. MSI below 0.7 or above 1.3 has been associated with adverse outcomes in observational emergency-department cohorts; these are research findings rather than management thresholds.
 
-## 📖 What It Does
+References:
+- Zarzaur et al. *J Surg Res*. 2008. [PMID 18498875](https://pubmed.ncbi.nlm.nih.gov/18498875/).
+- Liu et al. *World J Emerg Med*. 2012. [PMCID PMC4129788](https://pmc.ncbi.nlm.nih.gov/articles/4129788/).
+- Al Jalbout et al. *Arch Acad Emerg Med*. 2023. [PMCID PMC10197905](https://pmc.ncbi.nlm.nih.gov/articles/PMC10197905/).
 
-Shock Index Calculator
-=======================
+## Browser application
 
-Calculates multiple shock index variants for trauma triage and
-occult hypoperfusion assessment:
+Open `web/index.html` in a recent browser or serve the `web/` directory as static files. Enter heart rate, systolic pressure, optional diastolic pressure and age. The result panel shows all calculable indices and explanatory context.
 
-  - Shock Index (SI)        = HR / SBP
-  - Modified Shock Index (MSI) = HR / MAP  (MAP = DBP + (SBP-DBP)/3)
-  - Age-adjusted SI          = SI / (age / 100)
-  - Reverse SI               = SBP / HR
+For batch processing, select a CSV with headers `hr` (or `heart_rate`) and `sbp`; `dbp` and `age` are optional. Quoted CSV cells are supported, invalid rows are marked and exported cells are escaped against spreadsheet formula execution. Maximum: 2 MB and 2,000 records.
 
-Clinical significance:
-    SI 0.5-0.7 : Normal
-    SI > 0.9   : Suggests significant hemorrhage or sepsis
-    SI > 1.0   : High mortality risk, consider massive transfusion protocol
-    SI > 1.4   : Critical, >50% mortality
+The browser interface uses plain HTML, CSS and JavaScript without third-party scripts, cookies, analytics, accounts or network requests for calculations. Selected CSV files are processed locally; they are **not uploaded to the API**. Avoid placing identifiable patient information in exported or shared files.
 
-Pediatric adjustments:
-    Children have higher baseline HR and lower SBP, so adult SI
-    thresholds do not directly apply.  Age-specific reference ranges
-    are provided.
+## Python and CLI
 
-Core library is stdlib only — no external dependencies required.
+Python 3.10+ is supported. Core functions in `shock_index.py` use only the standard library.
 
----
-
-## ⚙️ Key Capabilities & Algorithmic Modules
-
-### 🔬 Analytical Functions
-
-- **`shock_index(hr, sbp)`**: Calculate Shock Index: SI = HR / SBP.
-
-Parameters:
-    hr:  heart rate in bpm
-    sbp: systolic blood pressure in mmHg
-
-Reference: Allgöwer M, Buri C. Schockindex. Dtsch Med Wschr 1967.
-
->>> shock_index(80, 120)
-0.667
-
-- **`modified_shock_index(hr, sbp, dbp)`**: Calculate Modified Shock Index: MSI = HR / MAP.
-
-MAP = DBP + (SBP - DBP) / 3
-
-Parameters:
-    hr:  heart rate in bpm
-    sbp: systolic blood pressure in mmHg
-    dbp: diastolic blood pressure in mmHg
-
-Reference: Mutschler M, et al. Crit Care 2013;17:R120.
-
-- **`age_adjusted_si(si, age)`**: Calculate age-adjusted Shock Index: Age-SI = SI / (age / 100).
-
-Useful for elderly patients where normal SI ranges shift.
-
-Parameters:
-    si:  shock index value
-    age: patient age in years
-
-Reference: Zarzaur BL, et al. J Trauma 2010;68:1238-1243.
-
-- **`reverse_shock_index(hr, sbp)`**: Calculate Reverse Shock Index: RSI = SBP / HR.
-
-Inverse of SI; higher values are better.  RSI < 1.0 is concerning.
-
-Parameters:
-    hr:  heart rate in bpm
-    sbp: systolic blood pressure in mmHg
-
-- **`map_from_bp(sbp, dbp)`**: Calculate Mean Arterial Pressure: MAP = DBP + (SBP - DBP) / 3.
-
----
-
-## 💻 CLI Quickstart & Usage
-
-### 1. Single Patient Calculation
 ```bash
-python cli.py single --hr 80 --sbp 120
-python cli.py single --hr 80 --sbp 120 --dbp 80 --age 50 --sex male
-```
-
-### 2. Batch CSV Processing
-```bash
+python cli.py single --hr 80 --sbp 120 --dbp 80 --age 50
 python cli.py batch -i sample.csv -o results.csv
+python -m pytest -q
 ```
 
-### 3. Audit Commands
-```bash
-python cli.py audit --task-id TASK-001
-python cli.py chat "Explain shock index"
-python cli.py verify-audit
-```
+Python CSV processing preserves original columns, annotates invalid rows and protects exported cells from spreadsheet formula injection. Nonfinite numeric values raise errors; DBP cannot exceed SBP.
 
-### Parameter Reference
-- `--hr`: Heart rate in bpm (required for single calculation)
-- `--sbp`: Systolic blood pressure in mmHg (required for single calculation)
-- `--dbp`: Diastolic blood pressure in mmHg (optional)
-- `--age`: Patient age in years (optional)
-- `--sex`: Patient sex (optional)
-- `-i/--input`: Input CSV file path (for batch mode)
-- `-o/--output`: Output CSV file path (for batch mode, default: results.csv)
-
-### Input CSV Schema
-
-| Field | Description | Requirement |
-|:------|:------------|:------------|
-| `hr` (or `heart_rate`) | Heart rate in bpm | Required |
-| `sbp` | Systolic blood pressure in mmHg | Required |
-| `dbp` | Diastolic blood pressure in mmHg | Optional |
-| `age` | Patient age in years | Optional |
-| `sex` | Patient sex | Optional |
-
----
-
-## 🛡️ Security & Enterprise Architecture
-
-* **Zero-PHI Outbound Interceptor:** Active AST and regex inspection blocking SSNs, MRNs, phone numbers, and patient identifiers.
-* **Tamper-Evident HMAC-SHA256 Audit Trail:** Chained, cryptographically signed logs for every evaluation and state transition.
-* **Air-Gapped LLM Reasoning Adapter:** Agnostic integration for local Ollama instances (`llama3`, `mistral`), Claude 3.5 Sonnet, GPT-4o, and deterministic test mocks.
-* **Active Learning Bayesian Calibration:** Dynamic tracker updating worker reliability weights and monitoring Brier calibration drift.
-* **FastAPI & Prometheus Telemetry:** Exposes OpenAPI 3.1 REST endpoints and operational Prometheus metrics (`/metrics`).
-
-### Security Notes
-- The audit trail uses HMAC-SHA256 with a secret key. Set the `AUDIT_SECRET_KEY` environment variable in production to ensure audit trail persistence across restarts.
-- Without `AUDIT_SECRET_KEY` set, a random key is generated at startup (suitable for development/testing only).
-
----
-
-## 🧪 Testing & Verification
-
-Run the automated test suite:
+## Optional HTTP service
 
 ```bash
-pytest -v
+python -m pip install -r requirements.txt
+uvicorn agents.api:app --reload
 ```
 
-Run specific test files:
+Open `http://127.0.0.1:8000/` for the same browser UI and `http://127.0.0.1:8000/docs` for API documentation. `POST /api/calculate` accepts JSON such as:
 
-```bash
-pytest test_shock_index.py -v
-pytest tests/ -v
+```json
+{"hr": 80, "sbp": 120, "dbp": 80, "age": 50}
 ```
 
-Execute high-throughput batch simulation benchmarks:
+Existing generic supervisor endpoints (`/api/audit`, `/api/chat`, `/api/audit/logs`) and CLI audit/chat commands are retained as **demonstration utilities**, not validated clinical agents. Their mock provider does not call a real LLM. The regex identifier guard is best-effort and **does not ensure HIPAA de-identification**. The HMAC audit chain is held in process memory, not a persistent clinical audit system.
 
-```bash
-python simulator.py 1000
-```
-
----
-
-## 🐳 Container Deployment
+Docker:
 
 ```bash
 docker build -t shock-index-modified-calculator .
-docker run -p 8000:8000 -e AUDIT_SECRET_KEY=your-secret-key shock-index-modified-calculator
+docker run --rm -p 8000:8000 -e AUDIT_SECRET_KEY=replace-with-long-random-secret shock-index-modified-calculator
 ```
 
-Or using Docker Compose:
+Set a unique strong `AUDIT_SECRET_KEY` for stable local signatures across runs; logs are not persisted between restarts.
+
+## Development and deployment
 
 ```bash
-AUDIT_SECRET_KEY=your-secret-key docker-compose up
+python -m pip install -r requirements-dev.txt
+python -m pytest -q
+node --check web/app.js
+node --test tests/web.test.cjs
 ```
 
----
+GitHub Actions checks Python 3.10–3.12 and Node 22. The Pages workflow publishes the static `web/` directory on the production branch once GitHub Pages uses the GitHub Actions source. No Pyodide or backend Python runtime is needed for this arithmetic-only browser app.
 
-## 📁 Project Structure
+## License
 
-```
-shock-index-modified-calculator/
-├── shock_index.py          # Core calculation library (stdlib only)
-├── cli.py                  # Command-line interface
-├── simulator.py            # High-throughput simulation
-├── enrichment.py           # Enrichment scoring engines
-├── agents/                 # Enterprise agent framework
-│   ├── base.py            # Security, PHI guard, audit trail
-│   ├── models.py          # Pydantic data models
-│   ├── supervisor.py      # Supervisor orchestrator
-│   ├── workers.py         # Specialized worker agents
-│   ├── api.py             # FastAPI REST server
-│   ├── llm_factory.py     # LLM provider factory
-│   ├── learning.py        # Bayesian calibration engine
-│   ├── metrics.py         # Prometheus metrics
-│   └── streamer.py        # WebSocket telemetry
-├── web/                   # Operations console (HTML)
-├── tests/                 # Test suite
-├── test_shock_index.py    # Core library tests
-├── sample.csv             # Sample input data
-├── Dockerfile             # Container build
-├── docker-compose.yml     # Container orchestration
-└── openapi_spec.json      # OpenAPI specification
-```
+[MIT](LICENSE).
