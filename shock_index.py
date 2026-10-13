@@ -11,11 +11,9 @@ occult hypoperfusion assessment:
   - Age-adjusted SI          = SI / (age / 100)
   - Reverse SI               = SBP / HR
 
-Clinical significance:
-    SI 0.5-0.7 : Normal
-    SI > 0.9   : Suggests significant hemorrhage or sepsis
-    SI > 1.0   : High mortality risk, consider massive transfusion protocol
-    SI > 1.4   : Critical, >50% mortality
+Interpretation:
+    SI and MSI are adjunctive hemodynamic measures, not diagnostic tests.
+    Thresholds differ across populations and must not prescribe treatment.
 
 Pediatric adjustments:
     Children have higher baseline HR and lower SBP, so adult SI
@@ -28,6 +26,7 @@ Stdlib only — no external dependencies.
 import argparse
 import csv
 import json
+import math
 import sys
 
 
@@ -42,6 +41,20 @@ SI_CRITICAL = 1.4
 
 # ── Core calculations ────────────────────────────────────────────────
 
+def _validate_number(value, label, *, positive=False):
+    """Reject booleans, non-numeric, non-finite, and invalid measurements."""
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError(f"{label} must be a finite number")
+    try:
+        if not math.isfinite(value):
+            raise ValueError(f"{label} must be finite")
+    except (TypeError, OverflowError, ValueError):
+        raise ValueError(f"{label} must be finite") from None
+    if positive and value <= 0:
+        raise ValueError(f"{label} must be positive, got {value}")
+    return value
+
+
 def shock_index(hr, sbp):
     """Calculate Shock Index: SI = HR / SBP.
 
@@ -51,13 +64,11 @@ def shock_index(hr, sbp):
 
     Reference: Allgöwer M, Buri C. Schockindex. Dtsch Med Wschr 1967.
 
-    >>> shock_index(80, 120)
+    >>> round(shock_index(80, 120), 3)
     0.667
     """
-    if hr <= 0:
-        raise ValueError(f"Heart rate must be positive, got {hr}")
-    if sbp <= 0:
-        raise ValueError(f"SBP must be positive, got {sbp}")
+    _validate_number(hr, "Heart rate", positive=True)
+    _validate_number(sbp, "SBP", positive=True)
     return hr / sbp
 
 
@@ -73,22 +84,16 @@ def modified_shock_index(hr, sbp, dbp):
 
     Reference: Mutschler M, et al. Crit Care 2013;17:R120.
     """
-    if hr <= 0:
-        raise ValueError(f"Heart rate must be positive, got {hr}")
-    if sbp <= 0:
-        raise ValueError(f"SBP must be positive, got {sbp}")
-    if dbp < 0:
-        raise ValueError(f"DBP must be non-negative, got {dbp}")
-    if dbp > sbp:
-        raise ValueError(f"DBP ({dbp}) cannot exceed SBP ({sbp})")
-    map_val = dbp + (sbp - dbp) / 3.0
+    _validate_number(hr, "Heart rate", positive=True)
+    map_val = map_from_bp(sbp, dbp)
     return hr / map_val
 
 
 def age_adjusted_si(si, age):
-    """Calculate age-adjusted Shock Index: Age-SI = SI / (age / 100).
+    """Calculate Age Shock Index: Age-SI = age (years) * SI.
 
-    Useful for elderly patients where normal SI ranges shift.
+    This is the published age x SI definition; do not apply the
+    earlier inverse-age formula. Use only as a contextual measure.
 
     Parameters:
         si:  shock index value
@@ -96,9 +101,9 @@ def age_adjusted_si(si, age):
 
     Reference: Zarzaur BL, et al. J Trauma 2010;68:1238-1243.
     """
-    if age <= 0:
-        raise ValueError(f"Age must be positive, got {age}")
-    return si / (age / 100.0)
+    _validate_number(si, "Shock index", positive=True)
+    _validate_number(age, "Age", positive=True)
+    return si * age
 
 
 def reverse_shock_index(hr, sbp):
@@ -110,10 +115,8 @@ def reverse_shock_index(hr, sbp):
         hr:  heart rate in bpm
         sbp: systolic blood pressure in mmHg
     """
-    if hr <= 0:
-        raise ValueError(f"Heart rate must be positive, got {hr}")
-    if sbp <= 0:
-        raise ValueError(f"SBP must be positive, got {sbp}")
+    _validate_number(hr, "Heart rate", positive=True)
+    _validate_number(sbp, "SBP", positive=True)
     return sbp / hr
 
 
@@ -127,8 +130,8 @@ def map_from_bp(sbp, dbp):
     Raises:
         ValueError: if inputs are invalid
     """
-    if sbp <= 0:
-        raise ValueError(f"SBP must be positive, got {sbp}")
+    _validate_number(sbp, "SBP", positive=True)
+    _validate_number(dbp, "DBP")
     if dbp < 0:
         raise ValueError(f"DBP must be non-negative, got {dbp}")
     if dbp > sbp:
@@ -143,42 +146,69 @@ def classify_si(si_value):
 
     Returns a dict with risk level, description, and clinical action.
     """
+    _validate_number(si_value, "Shock index", positive=True)
     if si_value < SI_NORMAL_LOW:
         return {
             "risk_level": "low",
             "description": "Below normal range",
-            "clinical_action": "Routine monitoring",
+            "clinical_action": "Interpret with other vital signs and clinical context",
         }
     elif si_value <= SI_NORMAL_HIGH:
         return {
             "risk_level": "normal",
             "description": "Normal range (0.5-0.7)",
-            "clinical_action": "Standard monitoring",
+            "clinical_action": "Interpret with other vital signs and clinical context",
         }
     elif si_value <= SI_HEMORRHAGE:
         return {
             "risk_level": "elevated",
             "description": "Elevated (0.7-0.9)",
-            "clinical_action": "Increased monitoring, assess for occult bleeding",
+            "clinical_action": "Assess the underlying clinical context",
         }
     elif si_value <= SI_HIGH_MORTALITY:
         return {
             "risk_level": "high",
             "description": "Suggests significant hemorrhage or sepsis (>0.9)",
-            "clinical_action": "Aggressive resuscitation, consider blood products",
+            "clinical_action": "Prompt clinical assessment may be warranted",
         }
     elif si_value <= SI_CRITICAL:
         return {
             "risk_level": "very_high",
             "description": "High mortality risk (>1.0)",
-            "clinical_action": "Activate massive transfusion protocol, surgical consult",
+            "clinical_action": "Urgent clinical assessment may be warranted",
         }
     else:
         return {
             "risk_level": "critical",
-            "description": "Critical, >50% mortality (>1.4)",
-            "clinical_action": "Immediate life-saving intervention required",
+            "description": "Markedly elevated SI (>1.4); risk is population-dependent",
+            "clinical_action": "Urgent clinical assessment may be warranted",
         }
+
+
+def classify_msi(msi_value):
+    """Describe MSI with published research cutoffs, not SI thresholds.
+
+    Values <0.7 or >1.3 have been associated with increased risk in
+    selected ED cohorts; they are not universal clinical decision rules.
+    """
+    _validate_number(msi_value, "Modified shock index", positive=True)
+    if msi_value < 0.7:
+        return {
+            "risk_level": "outside_studied_interval",
+            "description": "MSI <0.7 in observational ED cohorts",
+            "clinical_action": "Interpret with clinical context; not a treatment trigger",
+        }
+    if msi_value > 1.3:
+        return {
+            "risk_level": "outside_studied_interval",
+            "description": "MSI >1.3 in observational ED cohorts",
+            "clinical_action": "Interpret with clinical context; not a treatment trigger",
+        }
+    return {
+        "risk_level": "within_studied_interval",
+        "description": "MSI within 0.7–1.3 in observational ED cohorts",
+        "clinical_action": "Does not exclude shock or other illness",
+    }
 
 
 # ── Pediatric reference ranges ───────────────────────────────────────
@@ -191,6 +221,7 @@ def pediatric_si_reference(age_years):
 
     Returns (low, high) tuple for normal SI range.
     """
+    _validate_number(age_years, "Age")
     if age_years < 0:
         raise ValueError(f"Age must be non-negative, got {age_years}")
     if age_years < 1:
@@ -209,6 +240,7 @@ def pediatric_si_reference(age_years):
 
 def classify_si_pediatric(si_value, age_years):
     """Classify SI using age-appropriate pediatric thresholds."""
+    _validate_number(si_value, "Shock index", positive=True)
     low, high = pediatric_si_reference(age_years)
     if si_value <= high:
         return {
@@ -261,9 +293,9 @@ def calculate_shock_index(hr, sbp, dbp=None, age=None, sex=None):
         result["dbp_mmhg"] = dbp
         result["map_mmhg"] = round(map_val, 1)
         result["modified_si"] = round(msi, 3)
-        result["msi_classification"] = classify_si(msi)
+        result["msi_classification"] = classify_msi(msi)
 
-    if age is not None and age > 0:
+    if age is not None:
         aasi = age_adjusted_si(si, age)
         result["age"] = age
         result["age_adjusted_si"] = round(aasi, 3)
@@ -299,6 +331,8 @@ def process_csv(input_path, output_path):
 
     if not fieldnames:
         raise ValueError("CSV file is empty or has no header row")
+    if any(not name for name in fieldnames) or len(set(fieldnames)) != len(fieldnames):
+        raise ValueError("CSV headers must be non-empty and unique")
 
     # Validate required columns exist (hr or heart_rate, and sbp)
     has_hr = "hr" in fieldnames or "heart_rate" in fieldnames
@@ -311,6 +345,8 @@ def process_csv(input_path, output_path):
     results = []
     for row in rows:
         try:
+            if None in row:
+                raise ValueError("Row has more columns than the CSV header")
             hr_raw = row.get("hr") or row.get("heart_rate")
             sbp_raw = row.get("sbp")
             if not hr_raw or not sbp_raw:
@@ -348,13 +384,19 @@ def process_csv(input_path, output_path):
     all_keys = set()
     for r in results:
         all_keys.update(r.keys())
-    extra = sorted(k for k in all_keys if k not in fieldnames)
-    out_fields = fieldnames + extra
+    extra = sorted(k for k in all_keys if k not in fieldnames and k is not None)
+    out_fields = fieldnames + (extra or ["shock_index", "reverse_si", "si_risk_level"])
+    def safe_cell(value):
+        """Prevent spreadsheet formula execution in exported CSV cells."""
+        if isinstance(value, str) and value.lstrip().startswith(("=", "+", "-", "@")):
+            return "'" + value
+        return value
 
     with open(output_path, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=out_fields)
         writer.writeheader()
-        writer.writerows(results)
+        for row in results:
+            writer.writerow({key: safe_cell(row.get(key, "")) for key in out_fields})
 
     return results
 
