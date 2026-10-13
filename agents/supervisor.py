@@ -78,5 +78,5 @@ class SystemSupervisor:
 
     def query_supervisory_chat(self, query: str) -> str:
         PHIGuard.assert_no_phi(query)
-        prompt = f"Supervisor inquiry for Shock Index Modified Calculator under CAP / CLSI / ISO Standards: {query}"
+        prompt = f"Mock supervisor demonstration for Shock Index Modified Calculator: {query}"
         return self.llm.invoke(prompt)
