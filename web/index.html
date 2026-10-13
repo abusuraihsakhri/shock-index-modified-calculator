@@ -1,236 +1,118 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shock Index Modified Calculator — Operations Console</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --bg: #090d16;
-            --card: #111827;
-            --border: #1f293d;
-            --accent: #3b82f6;
-            --accent-glow: rgba(59, 130, 246, 0.25);
-            --text: #f3f4f6;
-            --text-muted: #9ca3af;
-            --danger: #ef4444;
-            --warning: #f59e0b;
-            --success: #10b981;
-        }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            font-family: 'Inter', sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            padding: 2rem;
-            min-height: 100vh;
-        }
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid var(--border);
-            padding-bottom: 1.5rem;
-            margin-bottom: 2rem;
-        }
-        .header-title h1 { font-size: 1.6rem; font-weight: 700; color: #fff; }
-        .header-title p { color: var(--text-muted); font-size: 0.9rem; margin-top: 0.25rem; }
-        .badge {
-            display: inline-block;
-            padding: 0.3rem 0.8rem;
-            border-radius: 9999px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            background: var(--accent-glow);
-            color: var(--accent);
-            border: 1px solid var(--accent);
-        }
-        .grid {
-            display: grid;
-            grid-template-columns: 1fr 1.2fr;
-            gap: 1.5rem;
-        }
-        .card {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 1.5rem;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-        }
-        .card h2 {
-            font-size: 1.1rem;
-            font-weight: 600;
-            margin-bottom: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        .form-group { margin-bottom: 1rem; }
-        label { display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.4rem; }
-        input, select, textarea {
-            width: 100%;
-            padding: 0.65rem 0.9rem;
-            background: #0d1322;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            color: #fff;
-            font-family: inherit;
-            font-size: 0.9rem;
-        }
-        input:focus, textarea:focus { outline: none; border-color: var(--accent); }
-        .btn {
-            background: var(--accent);
-            color: #fff;
-            border: none;
-            padding: 0.7rem 1.4rem;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: 0.2s;
-            width: 100%;
-        }
-        .btn:hover { background: #2563eb; }
-        .terminal {
-            background: #060911;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 1rem;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.85rem;
-            color: #10b981;
-            height: 380px;
-            overflow-y: auto;
-            white-space: pre-wrap;
-        }
-        .metrics-bar {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-        }
-        .metric-box {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 1rem;
-            text-align: center;
-        }
-        .metric-val { font-size: 1.4rem; font-weight: 700; color: #fff; margin-top: 0.25rem; }
-        .metric-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; }
-    </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Local, browser-based shock index, modified shock index, and age shock index calculator with CSV batch processing.">
+  <meta name="theme-color" content="#11243c">
+  <title>Shock Index Calculator | SI, MSI, Age-SI</title>
+  <link rel="stylesheet" href="./style.css">
+  <script src="./app.js" defer></script>
 </head>
 <body>
+  <header class="header">
+    <div class="header-inner">
+      <div>
+        <p class="eyebrow">Clinical calculators · Hemodynamic indices</p>
+        <h1>Shock Index Calculator</h1>
+        <p class="subtitle">Shock Index (SI), Modified Shock Index (MSI) and Age Shock Index</p>
+      </div>
+      <p class="privacy"><span aria-hidden="true">●</span> Calculations run locally in your browser</p>
+    </div>
+  </header>
 
-    <div class="header">
-        <div class="header-title">
-            <h1>Shock Index Modified Calculator</h1>
-            <p>Domain: Clinical & Cryptographic AI | Standard: CAP / CLSI / NIST Standards | LabMind-Atlas Architecture</p>
-        </div>
-        <div>
-            <span class="badge">Air-Gapped Active</span>
-            <span class="badge" style="background: rgba(16,185,129,0.2); color: #10b981; border-color: #10b981;">Zero-PHI Guard Active</span>
-        </div>
+  <main class="layout">
+    <div class="intro" role="note">
+      <strong>For education and research, not autonomous triage.</strong>
+      These indices support assessment but cannot diagnose shock, estimate an individual's mortality,
+      or determine resuscitation or transfusion decisions. Consider the full clinical presentation.
     </div>
 
-    <div class="metrics-bar">
-        <div class="metric-box">
-            <div class="metric-label">System Status</div>
-            <div class="metric-val" style="color: var(--success);" id="m-status">OPTIMAL</div>
+    <section class="workspace" aria-label="Single calculation">
+      <section class="panel input-panel">
+        <div class="section-head">
+          <div><p class="eyebrow">01 · Individual assessment</p><h2>Vital signs</h2></div>
+          <button id="reset" type="button" class="text-button">Reset example</button>
         </div>
-        <div class="metric-box">
-            <div class="metric-label">Tasks Processed</div>
-            <div class="metric-val" id="m-tasks">142</div>
-        </div>
-        <div class="metric-box">
-            <div class="metric-label">Audit Blocks Signed</div>
-            <div class="metric-val" id="m-audit">142</div>
-        </div>
-        <div class="metric-box">
-            <div class="metric-label">PHI Interceptions</div>
-            <div class="metric-val" style="color: var(--accent);" id="m-phi">0</div>
-        </div>
-    </div>
+        <form id="calculator" novalidate>
+          <div class="field">
+            <label for="hr">Heart rate <span class="unit">bpm</span></label>
+            <input id="hr" name="hr" type="number" required min="0.01" step="any" value="80" inputmode="decimal" autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="sbp">Systolic blood pressure <span class="unit">mmHg</span></label>
+            <input id="sbp" name="sbp" type="number" required min="0.01" step="any" value="120" inputmode="decimal" autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="dbp">Diastolic blood pressure <span class="unit">mmHg · optional</span></label>
+            <input id="dbp" name="dbp" type="number" min="0" step="any" value="80" inputmode="decimal" autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="age">Age <span class="unit">years · optional</span></label>
+            <input id="age" name="age" type="number" min="0.01" step="any" value="50" inputmode="decimal" autocomplete="off">
+          </div>
+          <p id="form-error" class="error" role="alert" hidden></p>
+          <button class="primary-button" type="submit">Calculate indices</button>
+          <p class="small-note">Example values are illustrative, not a patient record. Clear optional inputs to omit their indices.</p>
+        </form>
+      </section>
 
-    <div class="grid">
-        <div class="card">
-            <h2>⚙️ Dispatch Distributed Component Audit</h2>
-            <div class="form-group">
-                <label>Task / Sample ID</label>
-                <input type="text" id="task_id" value="TASK-2026-LIVE-01">
-            </div>
-            <div class="form-group">
-                <label>Target Identifier</label>
-                <input type="text" id="target_id" value="SPECIMEN-ALPHA-77">
-            </div>
-            <div class="form-group">
-                <label>Primary Measurement / Value</label>
-                <input type="number" id="primary_metric" value="29.4" step="0.1">
-            </div>
-            <div class="form-group">
-                <label>Secondary Metric / Kinetic Index</label>
-                <input type="number" id="secondary_metric" value="14.8" step="0.1">
-            </div>
-            <div class="form-group">
-                <label>Status / Phenotype Descriptor</label>
-                <input type="text" id="status_descriptor" value="DISCORDANT_ANOMALY">
-            </div>
-            <div class="form-group">
-                <label><input type="checkbox" id="is_critical" checked> Trigger Emergency / Critical Flag</label>
-            </div>
-            <button class="btn" onclick="runAudit()">Execute Distributed Component Audit</button>
+      <section class="panel results-panel" aria-labelledby="results-title">
+        <div class="section-head"><div><p class="eyebrow">02 · Derived values</p><h2 id="results-title">Calculated indices</h2></div><span id="result-status" class="status">Example</span></div>
+        <div class="indices">
+          <article class="index-card">
+            <p>Shock Index <abbr title="Shock Index">SI</abbr></p>
+            <strong id="out-si" aria-live="polite">—</strong>
+            <span>HR ÷ SBP</span>
+          </article>
+          <article class="index-card">
+            <p>Modified Shock Index <abbr title="Modified Shock Index">MSI</abbr></p>
+            <strong id="out-msi" aria-live="polite">—</strong>
+            <span>HR ÷ MAP</span>
+          </article>
+          <article class="index-card">
+            <p>Mean Arterial Pressure <abbr title="Mean Arterial Pressure">MAP</abbr></p>
+            <strong id="out-map" aria-live="polite">—</strong>
+            <span>DBP + (SBP − DBP) ÷ 3 · mmHg</span>
+          </article>
+          <article class="index-card">
+            <p>Age Shock Index <abbr title="Age Shock Index">Age-SI</abbr></p>
+            <strong id="out-age" aria-live="polite">—</strong>
+            <span>Age (years) × SI</span>
+          </article>
+          <article class="index-card">
+            <p>Reverse Shock Index <abbr title="Reverse Shock Index">RSI</abbr></p>
+            <strong id="out-rsi" aria-live="polite">—</strong>
+            <span>SBP ÷ HR</span>
+          </article>
         </div>
+        <div id="interpretation" class="interpretation" aria-live="polite"></div>
+        <p class="small-note">Values are rounded for display; underlying calculations use full precision. MSI research intervals differ from SI intervals.</p>
+      </section>
+    </section>
 
-        <div class="card">
-            <h2>📊 Real-Time Consensus Dossier & Audit Log</h2>
-            <div class="terminal" id="outputConsole">// Shock Index Modified Calculator Operations Console Ready
-// Connection established with Air-Gapped Supervisor
-// Cryptographic HMAC-SHA256 audit ledger loaded.
-// Ready for live task payload dispatch...</div>
-        </div>
-    </div>
+    <section class="panel batch-panel" aria-labelledby="batch-title">
+      <div class="section-head"><div><p class="eyebrow">03 · Bulk calculations</p><h2 id="batch-title">CSV batch processing</h2></div></div>
+      <p>Choose a CSV file with <code>hr</code> (or <code>heart_rate</code>) and <code>sbp</code> columns. Optional: <code>dbp</code> and <code>age</code>. The file stays on this device.</p>
+      <div class="batch-controls">
+        <label class="file-label" for="csv-file">Choose CSV file</label>
+        <input type="file" id="csv-file" accept=".csv,text/csv" aria-describedby="batch-hint">
+        <button id="download-csv" type="button" class="secondary-button" disabled>Download calculated CSV</button>
+      </div>
+      <p id="batch-hint" class="small-note">Maximum 2 MB / 2,000 records. Invalid rows are annotated rather than silently dropped. Avoid uploading identifiable patient data to untrusted sites.</p>
+      <p id="batch-message" class="batch-message" role="status" aria-live="polite">No file selected.</p>
+      <div class="table-wrap" tabindex="0" aria-label="CSV calculation preview">
+        <table id="preview"><thead><tr><th scope="col">Row</th><th scope="col">SI</th><th scope="col">MSI</th><th scope="col">Age-SI</th><th scope="col">Result</th></tr></thead><tbody><tr><td colspan="5">Upload a CSV to preview the first ten records.</td></tr></tbody></table>
+      </div>
+    </section>
 
-    <script>
-        async function runAudit() {
-            const consoleEl = document.getElementById('outputConsole');
-            consoleEl.innerText = "// Dispatching task across specialized workers...
-// Invoking InvariantQCWorker, SafetyEscalationWorker, ProtocolWorker...";
-
-            const payload = {
-                task_id: document.getElementById('task_id').value,
-                target_identifier: document.getElementById('target_id').value,
-                primary_metric: parseFloat(document.getElementById('primary_metric').value),
-                secondary_metric: parseFloat(document.getElementById('secondary_metric').value),
-                status_descriptor: document.getElementById('status_descriptor').value,
-                is_critical_flag: document.getElementById('is_critical').checked
-            };
-
-            try {
-                const res = await fetch('/api/audit', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const data = await res.json();
-                consoleEl.innerText = JSON.stringify(data, null, 2);
-                document.getElementById('m-tasks').innerText = parseInt(document.getElementById('m-tasks').innerText) + 1;
-                document.getElementById('m-audit').innerText = parseInt(document.getElementById('m-audit').innerText) + 1;
-            } catch (err) {
-                consoleEl.innerText = "// Offline / Simulation Output:\n" + JSON.stringify({
-                    dossier_id: "DOSSIER-SIM-" + Math.floor(Math.random()*10000),
-                    system: "shock-index-modified-calculator",
-                    domain: "Clinical & Cryptographic AI",
-                    task_id: payload.task_id,
-                    overall_urgency: payload.is_critical_flag ? "CRITICAL_STAT_PANIC" : "ELEVATED_RISK",
-                    integrity_status: "DISCORDANT_ANOMALY",
-                    alerts: [
-                        { worker: "InvariantQCWorker", alert: "Primary metric exceeds upper reference bound" },
-                        { worker: "SafetyEscalationWorker", alert: "Critical emergency interlock flag active" }
-                    ],
-                    audit_hash: "HMAC_SHA256_e83f9a72b941d6c381f9"
-                }, null, 2);
-            }
-        }
-    </script>
+    <section class="reference" aria-labelledby="reference-title">
+      <h2 id="reference-title">Interpretation and limitations</h2>
+      <p>SI and MSI associations depend on setting, population, measurement conditions and confounders (e.g., medication effects on heart rate). Historical SI cutoffs of 0.7 and 0.9 are descriptive, not universal rules. In observational emergency department studies, MSI values outside approximately 0.7–1.3 were associated with adverse outcomes. These values do not establish diagnosis or management.</p>
+      <p>Age-SI is <strong>age × SI</strong>, not SI divided by normalized age. Adult intervals should not be extrapolated directly to children; no pediatric risk stratification is provided by this browser tool.</p>
+      <p class="references">Sources: <a href="https://pubmed.ncbi.nlm.nih.gov/18498875/" target="_blank" rel="noopener noreferrer">Zarzaur et al., 2008</a> · <a href="https://pmc.ncbi.nlm.nih.gov/articles/4129788/" target="_blank" rel="noopener noreferrer">Liu et al., 2012</a> · <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC10197905/" target="_blank" rel="noopener noreferrer">Al Jalbout et al., 2023</a></p>
+    </section>
+  </main>
+  <footer>Open-source educational calculator · No analytics, accounts, cookies, or server uploads in this browser application.</footer>
 </body>
 </html>
