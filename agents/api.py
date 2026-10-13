@@ -17,8 +17,8 @@ supervisor = SystemSupervisor(model_provider="mock")
 
 app = FastAPI(
     title="Shock Index Modified Calculator API",
-    description="Enterprise Distributed Component Platform (Clinical & Biomedical AI)",
-    version="3.0.0-ENTERPRISE",
+    description="Numerical hemodynamic calculator and separate experimental audit demo.",
+    version="1.0.0",
 )
 
 
@@ -54,7 +54,7 @@ def api_calculate(payload: CalculateRequest):
 
 @app.get("/health")
 def health():
-    return {"status": "HEALTHY", "service": "shock-index-modified-calculator", "domain": "Clinical & Biomedical AI", "standard": "CAP / CLSI / ISO Standards", "version": "3.0.0-ENTERPRISE"}
+    return {"status": "HEALTHY", "service": "shock-index-modified-calculator", "domain": "Clinical & Biomedical AI", "intended_use": "education and research", "version": "1.0.0"}
 
 
 @app.get("/metrics")
