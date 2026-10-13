@@ -55,12 +55,12 @@ class TestModifiedShockIndex:
 
 class TestAgeAdjustedSI:
     def test_age_50(self):
-        # Age-SI = SI / (50/100) = SI / 0.5 = 2*SI
-        assert abs(age_adjusted_si(0.6, 50) - 1.2) < 0.01
+        # Published age shock index is age (years) multiplied by SI.
+        assert abs(age_adjusted_si(0.6, 50) - 30.0) < 0.01
 
     def test_age_100(self):
-        # Age-SI = SI / (100/100) = SI
-        assert abs(age_adjusted_si(0.6, 100) - 0.6) < 0.01
+        # SI * age: 0.6 * 100 = 60
+        assert abs(age_adjusted_si(0.6, 100) - 60.0) < 0.01
 
     def test_invalid_age(self):
         with pytest.raises(ValueError):
