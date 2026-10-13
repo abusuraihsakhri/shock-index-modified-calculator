@@ -25,6 +25,9 @@ class SystemSupervisor:
         PHIGuard.assert_no_phi(payload.task_id)
         PHIGuard.assert_no_phi(payload.target_identifier)
         PHIGuard.assert_no_phi(payload.status_descriptor)
+        # Check nested attributes as well as top-level identifiers. This is a
+        # best-effort filter, not a guarantee of de-identification.
+        PHIGuard.assert_no_phi(payload.model_dump_json())
 
         # Multi-worker evaluations
         all_alerts: List[AgentAlert] = []
@@ -75,5 +78,5 @@ class SystemSupervisor:
 
     def query_supervisory_chat(self, query: str) -> str:
         PHIGuard.assert_no_phi(query)
-        prompt = f"Supervisor inquiry for Shock Index Modified Calculator under CAP / CLSI / ISO Standards: {query}"
+        prompt = f"Mock supervisor demonstration for Shock Index Modified Calculator: {query}"
         return self.llm.invoke(prompt)
